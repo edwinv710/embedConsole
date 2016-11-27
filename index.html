@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html>
+  <head>
+
+    <meta charset="utf-8">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    <title>Embed Console</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+    <!-- Compiled and minified CSS -->
+    <link rel="stylesheet" href="css/embed_console.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.8.0/styles/default.min.css">
+
+  </head>
+
+  <body>
+
+    <div id="embed-console" style="width: 500px;"></div>
+
+    <script src="js/embed_console.js"-></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.8.0/highlight.min.js"-></script>
+    <script>
+      var sandboxConsole = new SandboxConsole('embed-console');
+      sandboxConsole.populate([
+        "Math.PI;", 
+        "Math.E;",
+        "Math.answer;",
+        "Math.answer = 42;",
+        "Math.answer;"
+      ]);
+    </script>
+
+  </body>
+</html>

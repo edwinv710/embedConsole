@@ -1,42 +1,84 @@
 var SandboxConsole = ( function() {
 
-  function placeCaretAtEnd(el) {
-    el.focus();
-    if (typeof window.getSelection != "undefined"
-            && typeof document.createRange != "undefined") {
-        var range = document.createRange();
-        range.selectNodeContents(el);
-        range.collapse(false);
-        var sel = window.getSelection();
-        sel.removeAllRanges();
-        sel.addRange(range);
-    } else if (typeof document.body.createTextRange != "undefined") {
-        var textRange = document.body.createTextRange();
-        textRange.moveToElementText(el);
-        textRange.collapse(false);
-        textRange.select();
+  var placeCaretAtEnd = function( e ) {
+    e.focus();
+    if ( typeof window.getSelection != "undefined" && typeof document.createRange != "undefined" ) {
+      var range = document.createRange();
+      range.selectNodeContents(e);
+      range.collapse(false);
+      var sel = window.getSelection();
+      sel.removeAllRanges();
+      sel.addRange(range);
+    } else if ( typeof document.body.createTextRange != "undefined" ) {
+      var textRange = document.body.createTextRange();
+      textRange.moveToElementText(e);
+      textRange.collapse(false);
+      textRange.select();
     }
+  };
+
+  var buildRadioButton = function( sandbox ) {
+    var radio   = document.createElement('input');
+    radio.id    = sandbox.id+"-radio-"+sandbox.history.items.length;
+    radio.value = sandbox.history.items.length;
+    radio.setAttribute('type', 'radio');
+    radio.setAttribute('name', 'log');
+    radio.onchange = function(e){
+      if( this.checked ) sandbox.updateInput( parseInt( this.value ) );
+    }
+    return radio
+  };
+
+  var buildLogItem = function ( sandbox, input, output, klass, stringify ) {
+    var outputClass   = "nohighlight";
+    var radio   = input ? buildRadioButton( sandbox ) : undefined;
+    var element = document.createElement('li');
+
+    if (output instanceof Error) klass += " log-error";
+
+    if ( ! (output instanceof Error) && stringify != false ){
+      outputClass = 'javascript';
+      output = JSON.stringify( output );  
+    }
+
+    var innerHTML = '<code class="'+outputClass+' log-output">'+ output + '</code>';
+    if ( input ) innerHTML = '<label for="'+radio.id+'"><code class="javascript log-input">'+input+'</code>'+innerHTML+'</label>'
+
+    element.className = klass || '';
+    element.innerHTML = innerHTML;
+
+    return { element: element, radio: radio };
   }
 
-  var SandboxConsole = function( container ) {
+  var buildLayout = function ( containterId ) {
+    var parent = document.getElementById( containterId );
+    
+    if (!parent) throw "Please provide a valid container.";
+    
+    var elements = {
+      parent:    parent,
+      container: document.createElement('div'),
+    };
+
+    elements.log   = elements.container.appendChild( document.createElement('ul') );
+    elements.input = elements.container.appendChild( document.createElement('div') );
+     
+    elements.container.className = 'console-sandbox';
+    elements.log.className       = 'console-log';
+    elements.input.className     = 'console-input';   
+    
+    elements.input.setAttribute("contenteditable", "true");
+
+    elements.parent.appendChild( elements.container );
+
+    return elements;
+  }
+
+  var SandboxConsole = function( containterId ) {
     var sbox = this;
 
-    this.id = (Math.random() + 1).toString(36).substring(16);
-    this.elements = {};
-    this.elements.parent = document.getElementById( container );
-    if (!this.elements.parent) throw "Please provide a valid id for a dom element.";
-
-    this.elements.container = document.createElement('div');
-    this.elements.container.className = 'console-sandbox';
-    this.elements.log = document.createElement('ul');
-    this.elements.log.className = 'console-log';
-    this.elements.input = document.createElement('div');
-    this.elements.input.setAttribute("contenteditable", "true");
-    this.elements.input.className = 'console-input';
-
-    this.elements.container.appendChild(this.elements.log);
-    this.elements.container.appendChild(this.elements.input);
-    this.elements.parent.appendChild(this.elements.container);
+    this.id       = (Math.random() + 1).toString(36).substring(16);
+    this.elements = buildLayout( containterId );
 
     this.elements.input.onkeydown = function( e ) {
       var value = this.innerText;
@@ -45,14 +87,13 @@ var SandboxConsole = ( function() {
         e.preventDefault();        
         if ( /\S/.test(value) ) sbox.execute( value );
       }    
-      else if ( e.which === 38 ) { e.preventDefault(); sbox.history.traverseUp( this ); }
-      else if ( e.which === 40 ) { e.preventDefault(); sbox.history.traverseDown( this ) };
+      else if ( e.which === 38 ) { e.preventDefault(); sbox.history.traverseUp( this );   }
+      else if ( e.which === 40 ) { e.preventDefault(); sbox.history.traverseDown( this ); };
     } 
   }
 
   SandboxConsole.prototype = {
     history: {
-
       position: 0,
       items: [],
       add: function( radio, element, input, output ) {
@@ -79,60 +120,39 @@ var SandboxConsole = ( function() {
       for (var i = 0; i < arr.length; i++ ) this.execute( arr[i] );
     },
     updateInput: function ( position ) {
-      this.history.position = parseInt(position);
-      this.elements.input.innerHTML = this.history.items[ this.history.position ] ? 
-        this.history.items[ this.history.position].input : '';
-      placeCaretAtEnd(this.elements.input);
+      var item  = this.history.items[ position ];
+      this.elements.input.innerHTML = item ? item.input : '';
+      this.history.position         = item ? position   : this.history.items.length;
+      placeCaretAtEnd( this.elements.input );
     },
-    buildLogItems: function ( klass, input, output ) {
-      var sandbox = this;
-      var element = document.createElement('li');
-      var radio   = document.createElement('input');
+    add: function( opts ) { 
+      var logItem = buildLogItem( this, opts.input, opts.output, opts.klass, opts.javascript );
+      var codes   = logItem.element.getElementsByTagName( "code" );
 
-      radio.id = this.id+"-radio-"+this.history.items.length;
-      radio.value = this.history.items.length;
-      radio.setAttribute('type', 'radio');
-      radio.setAttribute('name', 'log');
-      radio.onchange = function(e){
-        if( this.checked ) sandbox.updateInput( this.value );
-      }
-      element.className = klass;
-      element.innerHTML = '<label><pre><code class="javascript">'+input+'</code><code class="'+klass+'">'+ output + '</code></pre></label>';
-      element.childNodes[0].setAttribute('for', radio.id );     
-
-      return { element: element, radio: radio };
-    },
-    addLogItem: function( input, output, e ) {
-      var klass = "javascript";
-      var sandbox = this;
-      if      ( typeof output === 'undefined'  || e  ) { klass='nohighlight'; output = output || 'undefined' }
-      else if ( typeof output === 'object' || typeof output === 'string' ) output = JSON.stringify(output, " ", 2);
-
-      var logItems = this.buildLogItems( klass, input, output );
-      var codes = logItems.element.getElementsByTagName( "code" );
       for ( var i = 0; i < codes.length;  i++ ) hljs.highlightBlock( codes[i] );
-      this.elements.log.appendChild( logItems.radio );
-      this.elements.log.appendChild( logItems.element );
-
-      this.history.add( logItems.radio, logItems.element, input, output );
+     
+      if ( logItem.radio ) {
+        this.elements.log.appendChild( logItem.radio );  
+        this.history.add( logItem.radio, logItem.element, opts.input, opts.output );
+      }
+      
+      this.elements.log.appendChild( logItem.element );
       this.elements.log.scrollTop = this.elements.log.scrollHeight;
-    },
 
+    },
     execute: function( command ) {
       var output;
-      var error = false;
       try {
         output =  eval.call({}, command );
       }catch(e) {
         output = e;
-        error = true;
       };
 
-      this.addLogItem( command, output, error );
+      this.add( { input: command, output: output } );
       this.history.reset( this.elements.input );
     }
   };
   
-  return SandboxConsole;
- 
+  return SandboxConsole; 
+
 })();

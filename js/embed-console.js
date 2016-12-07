@@ -1,5 +1,10 @@
-var SandboxConsole = ( function() {
+var EmbedConsole = ( function() {
 
+  HTMLElement.prototype.scrollIntoView = function() {
+    if ( this.offsetTop >= this.parentNode.scrollTop + this.parentNode.offsetHeight ) this.parentNode.scrollTop = this.offsetTop - this.parentNode.offsetHeight + this.offsetHeight
+    else if( this.offsetTop <=  this.parentNode.scrollTop ) this.parentNode.scrollTop = this.offsetTop;
+  }
+    
   var placeCaretAtEnd = function( e ) {
     e.focus();
     if ( typeof window.getSelection != "undefined" && typeof document.createRange != "undefined" ) {
@@ -34,17 +39,22 @@ var SandboxConsole = ( function() {
     var radio   = input ? buildRadioButton( sandbox ) : undefined;
     var element = document.createElement('li');
 
+    klass = klass || '';
+
     if (output instanceof Error) klass += " log-error";
 
     if ( ! (output instanceof Error) && stringify != false ){
       outputClass = 'javascript';
-      output = JSON.stringify( output );  
+      output = JSON.stringify( output, null, 2 );
+      
+      if ( output ) output = output.replace(/"(.*)":/gi, '$1:');
+      console.log(output);
     }
 
-    var innerHTML = '<code class="'+outputClass+' log-output">'+ output + '</code>';
-    if ( input ) innerHTML = '<label for="'+radio.id+'"><code class="javascript log-input">'+input+'</code>'+innerHTML+'</label>'
+    var innerHTML = '<code class="'+outputClass+'">'+ output + '</code>';
+    if ( input ) innerHTML = '<label for="'+radio.id+'"><code class="javascript">'+input+'</code>'+innerHTML+'</label>'
 
-    element.className = klass || '';
+    element.className = klass;
     element.innerHTML = innerHTML;
 
     return { element: element, radio: radio };
@@ -72,13 +82,22 @@ var SandboxConsole = ( function() {
     elements.parent.appendChild( elements.container );
 
     return elements;
+  };
+
+  var defaultHighlightCallback = function ( logItem ) {
+    if( !hljs ) return; 
+    var codes   = logItem.getElementsByTagName( "code" );
+    for ( var i = 0; i < codes.length;  i++ ) hljs.highlightBlock( codes[i] );    
   }
 
-  var SandboxConsole = function( containterId ) {
+  var EmbedConsole = function( containterId, opts ) {
     var sbox = this;
+    opts = opts || {};
 
     this.id       = (Math.random() + 1).toString(36).substring(16);
+    this.highlightCallback = opts.highlight ||  defaultHighlightCallback;
     this.elements = buildLayout( containterId );
+    
 
     this.elements.input.onkeydown = function( e ) {
       var value = this.innerText;
@@ -90,25 +109,28 @@ var SandboxConsole = ( function() {
       else if ( e.which === 38 ) { e.preventDefault(); sbox.history.traverseUp( this );   }
       else if ( e.which === 40 ) { e.preventDefault(); sbox.history.traverseDown( this ); };
     } 
-  }
+  };
 
-  SandboxConsole.prototype = {
+  EmbedConsole.prototype = {
     history: {
       position: 0,
       items: [],
       add: function( radio, element, input, output ) {
         this.items.push({ radio: radio, element: element, input: input, output: output });
         this.position = this.items.length;
+        
       },
       traverseUp: function( e ) {
         var item = this.items[ this.position - 1 ];
         if ( !item ) return;
         item.radio.click();
+        item.element.scrollIntoView();    
       },
       traverseDown: function( e ) {
         var item = this.items[ this.position + 1 ];
         if ( !item ) return this.reset( e );
         item.radio.click();
+        item.element.scrollIntoView();
       },
       reset: function( e ) {
         for ( var i in this.items ) this.items[i].radio.checked = false;
@@ -127,10 +149,9 @@ var SandboxConsole = ( function() {
     },
     add: function( opts ) { 
       var logItem = buildLogItem( this, opts.input, opts.output, opts.klass, opts.javascript );
-      var codes   = logItem.element.getElementsByTagName( "code" );
-
-      for ( var i = 0; i < codes.length;  i++ ) hljs.highlightBlock( codes[i] );
      
+      this.highlightCallback( logItem.element );
+
       if ( logItem.radio ) {
         this.elements.log.appendChild( logItem.radio );  
         this.history.add( logItem.radio, logItem.element, opts.input, opts.output );
@@ -153,6 +174,6 @@ var SandboxConsole = ( function() {
     }
   };
   
-  return SandboxConsole; 
+  return EmbedConsole; 
 
 })();

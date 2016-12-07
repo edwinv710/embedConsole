@@ -1,0 +1,24 @@
+{
+  "name": "embed-console",
+  "version": "0.1.0",
+  "description": "Emebeddable Javascript Console",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/edwinv710/EmbedConsole.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/edwinv710/EmbedConsole/issues"
+  },
+  "homepage": "https://github.com/edwinv710/EmbedConsole#readme",
+  "devDependencies": {
+    "grunt": "^1.0.1",
+    "grunt-contrib-cssmin": "^1.0.2",
+    "grunt-contrib-uglify": "^2.0.0"
+  }
+}

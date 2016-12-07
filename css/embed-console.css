@@ -1,0 +1,84 @@
+*{ box-sizing: border-box; }
+
+.console-sandbox {
+  width: 100%;
+  background-color: white;
+  color: #222;
+}
+
+.console-sandbox > ul {
+  padding: 0;
+  height: 350px;
+  border: solid 1px #cfd6d9;
+  border-bottom: none;
+  margin: 0;
+  overflow: scroll;
+  list-style: none;
+  position: relative;
+}
+
+.console-sandbox > ul > li {
+  border-bottom: solid 1px #cfd6d9;
+  width: 100%;
+}
+
+.console-sandbox > ul > li > label:hover {
+  cursor: pointer;
+  background-color: rgba( 0, 0, 0, 0.02)
+}
+.console-sandbox > ul > li > label { display: block; }
+
+.console-sandbox > ul > input[type=radio] { display: none; }
+.console-sandbox > ul > input[type=radio]:checked + li { background-color: rgba( 0, 0, 0, 0.04); }
+
+.console-sandbox > ul > li code {
+  padding: 5px;
+  padding-left: 20px;
+  background-color: transparent;
+  position: relative;
+  width: 100%;
+  display: block;
+  white-space: pre-wrap;
+}
+
+.console-sandbox > ul > li code.log-input { padding-bottom: 0; }
+
+.console-sandbox > ul > li code:before {
+  width: 10px;
+  display: inline-block;
+  margin-right: 5px;
+  color: #c5c1c0;
+  position: absolute;
+  left: 5px;
+  top: 5px;
+}
+
+.console-sandbox > ul > li  label > code:before { content: ">"; }
+.console-sandbox > ul > li  code:last-of-type:before { content: "<"; }
+
+.console-sandbox > .console-input {
+  width: 100%;
+  font-size: 14px;
+  padding: 5px;
+  font-family: monospace;
+  padding-left: 25px;
+  position: relative;
+  border: solid 1px #cfd6d9;
+  overflow: hidden;
+  max-height: 100px;
+  margin-top: -1px;
+  outline: none;
+}
+
+.console-sandbox > .console-input:after {
+  content: '>';
+  font-size: 14px;
+  position: absolute;
+  top: calc( 50% - 18px/2 );
+  left: 8px;
+  color: #328cc1;
+}
+
+.console-sandbox > ul > li.log-error { background-color: rgba( 255,0,0,0.1 ); }
+.console-sandbox > ul > li.log-error > label > code:last-of-type { color: red; }
+.console-sandbox > ul > li.log-event { background-color: beige; }
